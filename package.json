@@ -6,6 +6,7 @@
   "scripts": {
     "migrate": "tsx src/db/migrate.ts",
     "scan": "tsx src/scan/index.ts",
+    "flag": "tsx src/flag/index.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit"
   },
