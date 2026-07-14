@@ -5,3 +5,7 @@ build/
 .env
 .env.local
 .DS_Store
+
+# Generated report/dashboard output - regenerated each run, not source
+reports/
+site/

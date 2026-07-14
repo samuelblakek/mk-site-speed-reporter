@@ -7,11 +7,16 @@
     "migrate": "tsx src/db/migrate.ts",
     "scan": "tsx src/scan/index.ts",
     "flag": "tsx src/flag/index.ts",
+    "report": "tsx src/report/index.ts",
+    "report:weekly": "tsx src/report/index.ts weekly",
+    "report:monthly": "tsx src/report/index.ts monthly",
+    "dashboard": "tsx src/dashboard/index.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
+    "marked": "^15.0.4",
     "pg": "^8.13.1"
   },
   "devDependencies": {

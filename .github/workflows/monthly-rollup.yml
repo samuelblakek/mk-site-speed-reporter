@@ -1,0 +1,52 @@
+name: Monthly rollup report
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: site-speed-pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  rollup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install
+
+      - name: Generate monthly report (last 30 days, from existing scan data)
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: npm run report:monthly
+
+      - name: Fetch previously published site (if any)
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages > /dev/null 2>&1; then
+            git fetch origin gh-pages:gh-pages
+            git worktree add previous-site gh-pages
+          else
+            mkdir -p previous-site
+          fi
+
+      - name: Build dashboard
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          PREVIOUS_SITE_REPORTS_DIR: previous-site/reports
+        run: npm run dashboard
+
+      - name: Publish to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          keep_files: true

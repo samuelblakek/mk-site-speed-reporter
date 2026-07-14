@@ -2,7 +2,7 @@
 
 Automated Core Web Vitals / site-speed monitoring for the storefront: daily scan of the homepage, 50 categories, and 200 product pages via the PageSpeed Insights API, with trend history and a report developers actually see.
 
-Full spec: [docs/project-spec.md](docs/project-spec.md). Architecture detail: [docs/architecture.md](docs/architecture.md) (added once build starts). Progress: [docs/status.md](docs/status.md).
+Full spec: [docs/project-spec.md](docs/project-spec.md). Architecture detail: [docs/architecture.md](docs/architecture.md). Progress: [docs/status.md](docs/status.md).
 
 ## Stack
 
@@ -28,4 +28,8 @@ Node.js/TypeScript, GitHub Actions (scheduling + CI), Neon (Postgres), PageSpeed
 - Typecheck: `bunx tsc --noEmit` (or `npx tsc --noEmit` where npm is available).
 - Run migration: `npm run migrate` (Node/CI) or `bun src/db/migrate.ts` (local - Bun doesn't support the `tsx` loader hook, so invoke the file directly rather than via `bun run migrate`).
 - Run a scan: `npm run scan` (Node/CI) or `bun src/scan/index.ts` (local, same reason as above).
+- Flag today's results: `npm run flag` / `bun src/flag/index.ts [run_date]`.
+- Generate a report: `npm run report` (today) / `report:weekly` / `report:monthly`, or `npm run report -- range <start> <end>` (or the Bun-direct equivalents).
+- Build the dashboard: `npm run dashboard` / `bun src/dashboard/index.ts` - writes to `site/` (gitignored, regenerated each run).
 - Requires a local `.env` (gitignored, copy from `.env.example`) with real `PSI_API_KEY` and `NEON_DATABASE_URL` values to run against real services.
+- GitHub Pages is branch-based (`peaceiris/actions-gh-pages`, `keep_files: true`) - see `docs/project-spec.md` "GitHub Pages deployment" before changing the publish step.

@@ -116,17 +116,24 @@ create table scan_results (
   cls           numeric,
   perf_score    integer,             -- Lighthouse performance score, 0-100
   http_status   integer,
+  scan_failed   boolean not null default false,
+  failure_reason      text,          -- set when scan_failed - lets a single bad URL fail without killing the run
   console_errors      jsonb,         -- [{ text, source }]
   deprecations        jsonb,         -- [{ text, source }]
-  render_blocking     jsonb,         -- [url, ...]
-  third_party_summary jsonb,         -- [{ domain, blockingTimeMs, transferSize }]
-  raw_lighthouse_ref  text,          -- optional: pointer to full PSI response if archived separately
+  render_blocking     jsonb,         -- [url, wastedMs]
+  third_party_summary jsonb,         -- [{ entity, mainThreadTimeMs, transferSize }]
   created_at   timestamptz not null default now()
 );
 
 create index on scan_results (url, run_date);
 create index on scan_results (run_date);
 ```
+
+### GitHub Pages deployment (implementation note)
+
+The dashboard/reports are published via `peaceiris/actions-gh-pages` to a `gh-pages` branch with `keep_files: true`, rather than the newer artifact-based `actions/deploy-pages`. Reason: each Pages deployment normally replaces the whole site, which would silently delete every previously-published report. `keep_files: true` leaves untouched files on the branch alone, and each workflow run also checks out the current `gh-pages` branch into `previous-site/` first so the dashboard's report link list can reference prior reports it isn't regenerating this run.
+
+This requires a one-time manual repo setting: **Settings -> Pages -> Build and deployment -> Source: "Deploy from a branch"**, branch `gh-pages`, folder `/ (root)`. The first workflow run creates the `gh-pages` branch; the Pages source setting can be pointed at it once that branch exists.
 
 ### PSI API integration notes
 
