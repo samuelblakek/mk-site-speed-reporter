@@ -24,4 +24,8 @@ Node.js/TypeScript, GitHub Actions (scheduling + CI), Neon (Postgres), PageSpeed
 
 ## Build / test
 
-Not yet established - no `package.json` or scripts exist yet. Update this section once the Node/TypeScript project is scaffolded.
+- Install: `npm install` (CI/Node) or `bun install` (local dev on this machine - Node/npm aren't on PATH here, only Bun is).
+- Typecheck: `bunx tsc --noEmit` (or `npx tsc --noEmit` where npm is available).
+- Run migration: `npm run migrate` (Node/CI) or `bun src/db/migrate.ts` (local - Bun doesn't support the `tsx` loader hook, so invoke the file directly rather than via `bun run migrate`).
+- Run a scan: `npm run scan` (Node/CI) or `bun src/scan/index.ts` (local, same reason as above).
+- Requires a local `.env` (gitignored, copy from `.env.example`) with real `PSI_API_KEY` and `NEON_DATABASE_URL` values to run against real services.
