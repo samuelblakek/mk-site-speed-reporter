@@ -1,0 +1,44 @@
+
+:root {
+  color-scheme: light dark;
+  --fg: #1a1a1a;
+  --bg: #ffffff;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --broken: #dc2626;
+  --poor: #ea580c;
+  --regression: #d97706;
+  --needs-improvement: #ca8a04;
+  --good: #16a34a;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #f3f4f6;
+    --bg: #111827;
+    --muted: #9ca3af;
+    --border: #374151;
+  }
+}
+body { font-family: system-ui, -apple-system, sans-serif; color: var(--fg); background: var(--bg); margin: 0; padding: 2rem; }
+main { max-width: 960px; margin: 0 auto; }
+h1 { margin-bottom: 0.25rem; }
+.muted { color: var(--muted); }
+.cards { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1.5rem 0; }
+.card { border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.5rem; text-align: center; min-width: 100px; }
+.card-value { display: block; font-size: 2rem; font-weight: 700; }
+.card-label { display: block; color: var(--muted); font-size: 0.85rem; }
+.card-broken .card-value { color: var(--broken); }
+.card-poor .card-value { color: var(--poor); }
+.card-regression .card-value { color: var(--regression); }
+.trend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.trend-grid svg { color: var(--fg); }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.badge { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+.badge-broken { background: color-mix(in srgb, var(--broken) 20%, transparent); color: var(--broken); }
+.badge-poor { background: color-mix(in srgb, var(--poor) 20%, transparent); color: var(--poor); }
+.badge-regression { background: color-mix(in srgb, var(--regression) 20%, transparent); color: var(--regression); }
+.badge-needs-improvement { background: color-mix(in srgb, var(--needs-improvement) 20%, transparent); color: var(--needs-improvement); }
+.badge-good { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
+.report table { margin-bottom: 1.5rem; }
