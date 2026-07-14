@@ -1,5 +1,5 @@
-import { pool } from "../db/client.js";
-import type { ScanResultRow } from "../flag/rules.js";
+import type { FieldDataSource, ScanResultRow } from "../flag/rules.js";
+import { pool } from "./client.js";
 
 export interface ConsoleIssueRow {
   text: string | null;
@@ -30,12 +30,16 @@ export interface DailyAverage {
   perfScore: number | null;
 }
 
+// Single source of truth for the scan_results column list - both the flag and report
+// modules query through here so a new column only ever needs to be added in one place.
 const SELECT_COLUMNS = `
   url, page_type as "pageType", device, run_date as "runDate", lcp_ms as "lcpMs",
   inp_ms as "inpMs", cls, perf_score as "perfScore", http_status as "httpStatus",
   scan_failed as "scanFailed", failure_reason as "failureReason",
   console_errors as "consoleErrors", render_blocking as "renderBlocking",
-  third_party_summary as "thirdPartySummary"
+  third_party_summary as "thirdPartySummary",
+  field_data_source as "fieldDataSource", field_lcp_ms as "fieldLcpMs",
+  field_cls as "fieldCls", field_inp_ms as "fieldInpMs"
 `;
 
 function toIsoDate(value: unknown): string {
@@ -56,6 +60,7 @@ export async function getResultsForDate(runDate: string): Promise<ScanRow[]> {
   return rows.map((row: any) => ({
     ...row,
     runDate: toIsoDate(row.runDate),
+    fieldDataSource: (row.fieldDataSource ?? "none") as FieldDataSource,
     consoleErrors: row.consoleErrors ?? [],
     renderBlocking: row.renderBlocking ?? [],
     thirdPartySummary: row.thirdPartySummary ?? [],

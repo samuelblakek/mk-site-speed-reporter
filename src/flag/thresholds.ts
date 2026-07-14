@@ -24,6 +24,14 @@ export function rateTbtProxy(ms: number): Rating {
   return "poor";
 }
 
+// Google's official INP thresholds - only valid for real (field) INP data.
+// https://web.dev/articles/defining-core-web-vitals-thresholds
+export function rateInp(ms: number): Rating {
+  if (ms <= 200) return "good";
+  if (ms <= 500) return "needs-improvement";
+  return "poor";
+}
+
 // Lighthouse's own performance score bands.
 // https://developer.chrome.com/docs/lighthouse/performance/performance-scoring
 export function ratePerfScore(score: number): Rating {

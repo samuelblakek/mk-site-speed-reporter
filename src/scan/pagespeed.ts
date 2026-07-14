@@ -16,6 +16,17 @@ export interface ThirdPartyEntry {
   transferSize: number | null;
 }
 
+export type FieldDataSource = "page" | "origin" | "none";
+
+export interface FieldData {
+  source: FieldDataSource;
+  lcpMs: number | null;
+  cls: number | null;
+  inpMs: number | null;
+  fcpMs: number | null;
+  ttfbMs: number | null;
+}
+
 export interface PageSpeedResult {
   lcpMs: number | null;
   inpMs: number | null;
@@ -26,6 +37,7 @@ export interface PageSpeedResult {
   deprecations: ConsoleIssue[];
   renderBlocking: RenderBlockingResource[];
   thirdPartySummary: ThirdPartyEntry[];
+  field: FieldData;
 }
 
 const PSI_ENDPOINT = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed";
@@ -105,6 +117,8 @@ function parsePageSpeedResponse(data: any): PageSpeedResult {
     transferSize: item.transferSize ?? null,
   }));
 
+  const field = parseFieldData(data?.loadingExperience, data?.originLoadingExperience);
+
   return {
     lcpMs,
     inpMs,
@@ -115,5 +129,41 @@ function parsePageSpeedResponse(data: any): PageSpeedResult {
     deprecations,
     renderBlocking,
     thirdPartySummary,
+    field,
+  };
+}
+
+function fieldMetricPercentile(metrics: any, key: string): number | null {
+  const value = metrics?.[key]?.percentile;
+  return typeof value === "number" ? value : null;
+}
+
+// loadingExperience is real Chrome UX Report (CrUX) data for this specific URL, aggregated
+// from real users over the trailing 28 days - only present if the URL gets enough traffic.
+// originLoadingExperience is the same thing aggregated across the whole site, used as a
+// fallback for lower-traffic pages (most category/product pages won't have their own).
+function parseFieldData(loadingExperience: any, originLoadingExperience: any): FieldData {
+  const source: FieldDataSource = loadingExperience?.metrics
+    ? "page"
+    : originLoadingExperience?.metrics
+      ? "origin"
+      : "none";
+  const metrics = loadingExperience?.metrics ?? originLoadingExperience?.metrics ?? null;
+
+  if (!metrics) {
+    return { source: "none", lcpMs: null, cls: null, inpMs: null, fcpMs: null, ttfbMs: null };
+  }
+
+  const clsPercentile = fieldMetricPercentile(metrics, "CUMULATIVE_LAYOUT_SHIFT_SCORE");
+
+  return {
+    source,
+    lcpMs: fieldMetricPercentile(metrics, "LARGEST_CONTENTFUL_PAINT_MS"),
+    // CrUX reports CLS scaled by 100 (a percentile of 26 means a CLS of 0.26) - unscale it to
+    // match the 0-1 range Lighthouse's lab CLS and our own rating thresholds use.
+    cls: clsPercentile == null ? null : clsPercentile / 100,
+    inpMs: fieldMetricPercentile(metrics, "INTERACTION_TO_NEXT_PAINT"),
+    fcpMs: fieldMetricPercentile(metrics, "FIRST_CONTENTFUL_PAINT_MS"),
+    ttfbMs: fieldMetricPercentile(metrics, "EXPERIMENTAL_TIME_TO_FIRST_BYTE"),
   };
 }

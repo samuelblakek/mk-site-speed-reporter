@@ -37,8 +37,9 @@ async function scanOne(entry: UrlEntry, device: Strategy, runDate: string): Prom
     await pool.query(
       `insert into scan_results
         (url, page_type, device, run_date, lcp_ms, inp_ms, cls, perf_score, http_status,
-         scan_failed, console_errors, deprecations, render_blocking, third_party_summary)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,false,$10,$11,$12,$13)`,
+         scan_failed, console_errors, deprecations, render_blocking, third_party_summary,
+         field_data_source, field_lcp_ms, field_cls, field_inp_ms, field_fcp_ms, field_ttfb_ms)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,false,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
       [
         entry.url,
         entry.pageType,
@@ -53,6 +54,12 @@ async function scanOne(entry: UrlEntry, device: Strategy, runDate: string): Prom
         JSON.stringify(result.deprecations),
         JSON.stringify(result.renderBlocking),
         JSON.stringify(result.thirdPartySummary),
+        result.field.source,
+        result.field.lcpMs,
+        result.field.cls,
+        result.field.inpMs,
+        result.field.fcpMs,
+        result.field.ttfbMs,
       ]
     );
     console.log(`OK   ${device.padEnd(7)} ${entry.pageType.padEnd(9)} ${entry.url}`);

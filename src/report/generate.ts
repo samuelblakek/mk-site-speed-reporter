@@ -1,6 +1,6 @@
+import { getDailyAverages, getLatestRunDate, getResultsForDate } from "../db/queries.js";
 import { flagScanResult } from "../flag/rules.js";
 import { getTrailingAverage } from "../flag/trailing.js";
-import { getDailyAverages, getLatestRunDate, getResultsForDate } from "./queries.js";
 import { renderReport, type FlaggedRow } from "./render.js";
 
 export interface GenerateReportOptions {

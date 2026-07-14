@@ -1,25 +1,18 @@
 import "dotenv/config";
+import { getResultsForDate } from "../db/queries.js";
 import { pool } from "../db/client.js";
-import { flagScanResult, type ScanResultRow } from "./rules.js";
+import { flagScanResult } from "./rules.js";
 import { getTrailingAverage } from "./trailing.js";
 
 async function main(): Promise<void> {
   const runDate = process.argv[2] ?? new Date().toISOString().slice(0, 10);
 
-  const { rows } = await pool.query(
-    `select url, page_type as "pageType", device, run_date as "runDate", lcp_ms as "lcpMs",
-            inp_ms as "inpMs", cls, perf_score as "perfScore", http_status as "httpStatus",
-            scan_failed as "scanFailed", failure_reason as "failureReason"
-     from scan_results
-     where run_date = $1
-     order by url, device`,
-    [runDate]
-  );
+  const rows = await getResultsForDate(runDate);
 
   console.log(`Flagging ${rows.length} scan results for run_date=${runDate}`);
 
   let flaggedCount = 0;
-  for (const row of rows as ScanResultRow[]) {
+  for (const row of rows) {
     const trailing = await getTrailingAverage(row.url, row.device, row.pageType, row.runDate);
     const flags = flagScanResult(row, trailing);
     if (flags.length > 0) {

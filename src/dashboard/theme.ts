@@ -1,0 +1,140 @@
+// Validated palette (dataviz skill defaults) - see docs/architecture.md for how this was
+// checked (scripts/validate_palette.js, both light and dark modes, all checks passing).
+
+export const SERIES = {
+  mobile: { light: "#2a78d6", dark: "#3987e5", label: "Mobile" },
+  desktop: { light: "#1baf7a", dark: "#199e70", label: "Desktop" },
+} as const;
+
+export type StatusRole = "good" | "warning" | "serious" | "critical";
+
+export const STATUS: Record<StatusRole, { light: string; dark: string; icon: string }> = {
+  good: { light: "#0ca30c", dark: "#0ca30c", icon: "✓" },
+  warning: { light: "#fab219", dark: "#fab219", icon: "▲" },
+  serious: { light: "#ec835a", dark: "#ec835a", icon: "▲" },
+  critical: { light: "#d03b3b", dark: "#d03b3b", icon: "✕" },
+};
+
+// Our flag severities map onto the fixed 4-role status system (good/warning/serious/critical) -
+// regression and needs-improvement share the "warning" color since neither is urgent, but they
+// always ship with a text label too (never color alone), so they stay distinguishable.
+export function severityToStatusRole(severity: "broken" | "poor" | "regression" | "needs-improvement" | "good"): StatusRole {
+  switch (severity) {
+    case "broken":
+      return "critical";
+    case "poor":
+      return "serious";
+    case "regression":
+    case "needs-improvement":
+      return "warning";
+    default:
+      return "good";
+  }
+}
+
+export const THEME_CSS = `
+:root {
+  color-scheme: light dark;
+  --surface-1:      #fcfcfb;
+  --page-plane:      #f9f9f7;
+  --text-primary:   #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted:     #898781;
+  --gridline:       #e1e0d9;
+  --axis:           #c3c2b7;
+  --border:         rgba(11,11,11,0.10);
+  --series-mobile:  ${SERIES.mobile.light};
+  --series-desktop: ${SERIES.desktop.light};
+  --status-good:     ${STATUS.good.light};
+  --status-warning:  ${STATUS.warning.light};
+  --status-serious:  ${STATUS.serious.light};
+  --status-critical: ${STATUS.critical.light};
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-1:      #1a1a19;
+    --page-plane:      #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --axis:           #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-mobile:  ${SERIES.mobile.dark};
+    --series-desktop: ${SERIES.desktop.dark};
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--text-primary);
+  background: var(--page-plane);
+  margin: 0;
+  padding: 2rem 1.5rem 4rem;
+}
+main { max-width: 1080px; margin: 0 auto; }
+h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
+h2 { font-size: 1.05rem; margin: 0 0 0.75rem; }
+h3 { font-size: 0.9rem; margin: 0 0 0.5rem; color: var(--text-secondary); font-weight: 600; }
+.muted { color: var(--text-muted); font-size: 0.9rem; }
+section { margin: 2.5rem 0; }
+.card-surface {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+/* Stat tiles */
+.stat-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.stat-tile { padding: 1rem 1.25rem; min-width: 130px; flex: 1 1 130px; }
+.stat-tile .stat-value { display: block; font-size: 2rem; font-weight: 600; line-height: 1.1; }
+.stat-tile .stat-label { display: block; margin-top: 0.25rem; color: var(--text-secondary); font-size: 0.82rem; }
+.stat-tile[data-role="critical"] .stat-value { color: var(--status-critical); }
+.stat-tile[data-role="serious"] .stat-value { color: var(--status-serious); }
+.stat-tile[data-role="warning"] .stat-value { color: var(--status-warning); }
+
+/* Status badge - always icon + text, never color alone */
+.badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
+.badge[data-role="good"] { background: color-mix(in srgb, var(--status-good) 16%, transparent); color: var(--status-good); }
+.badge[data-role="warning"] { background: color-mix(in srgb, var(--status-warning) 20%, transparent); color: color-mix(in srgb, var(--status-warning) 70%, black); }
+.badge[data-role="serious"] { background: color-mix(in srgb, var(--status-serious) 18%, transparent); color: var(--status-serious); }
+.badge[data-role="critical"] { background: color-mix(in srgb, var(--status-critical) 18%, transparent); color: var(--status-critical); }
+@media (prefers-color-scheme: dark) {
+  .badge[data-role="warning"] { color: color-mix(in srgb, var(--status-warning) 90%, white); }
+}
+
+/* Chart card */
+.chart-card { padding: 1.25rem 1.25rem 0.75rem; }
+.chart-legend { display: flex; gap: 1rem; margin-bottom: 0.5rem; font-size: 0.82rem; color: var(--text-secondary); }
+.chart-legend .legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+.chart-legend .legend-key { width: 14px; height: 2px; border-radius: 1px; display: inline-block; }
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 640px) { .chart-grid { grid-template-columns: 1fr; } }
+svg.trend-chart { width: 100%; height: auto; overflow: visible; }
+svg.trend-chart text { fill: var(--text-muted); font-size: 10px; font-family: system-ui, sans-serif; }
+svg.trend-chart .gridline { stroke: var(--gridline); stroke-width: 1; }
+svg.trend-chart .crosshair { stroke: var(--axis); stroke-width: 1; opacity: 0; pointer-events: none; }
+.chart-tooltip {
+  position: absolute; pointer-events: none; opacity: 0; transition: opacity 0.1s;
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 6px;
+  padding: 0.5rem 0.65rem; font-size: 0.78rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  white-space: nowrap; z-index: 10;
+}
+.chart-tooltip .tt-date { color: var(--text-muted); margin-bottom: 0.25rem; }
+.chart-tooltip .tt-row { display: flex; align-items: center; gap: 0.4rem; }
+.chart-tooltip .tt-key { width: 10px; height: 2px; display: inline-block; }
+.chart-tooltip .tt-value { font-weight: 600; margin-left: auto; padding-left: 0.75rem; font-variant-numeric: tabular-nums; }
+.chart-wrap { position: relative; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--gridline); white-space: nowrap; }
+th { color: var(--text-secondary); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.02em; }
+td { font-variant-numeric: tabular-nums; }
+td:first-child, td:nth-child(2) { font-variant-numeric: normal; }
+
+a { color: var(--series-mobile); }
+ul { padding-left: 1.25rem; }
+`;

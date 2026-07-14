@@ -1,10 +1,11 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { marked } from "marked";
+import { getDailyAverages, getLatestRunDate, getResultsForDate, type ScanRow } from "../db/queries.js";
 import { flagScanResult, type Flag } from "../flag/rules.js";
 import { getTrailingAverage } from "../flag/trailing.js";
-import { getDailyAverages, getLatestRunDate, getResultsForDate, type ScanRow } from "../report/queries.js";
-import { renderSparkline } from "./sparkline.js";
+import { CHART_INTERACTION_SCRIPT, renderLineChart, type ChartSeries } from "./lineChart.js";
+import { SERIES, severityToStatusRole, THEME_CSS } from "./theme.js";
 
 const SITE_DIR = "site";
 const REPORTS_SOURCE_DIR = "reports";
@@ -32,16 +33,31 @@ function escapeHtml(value: string): string {
   });
 }
 
-function severityBadge(severity: Flag["severity"] | "good"): string {
-  return `<span class="badge badge-${severity}">${severity}</span>`;
-}
+type Severity = Flag["severity"] | "good";
 
-function worstSeverity(flags: Flag[]): Flag["severity"] | "good" {
+function worstSeverity(flags: Flag[]): Severity {
   const order: Flag["severity"][] = ["broken", "poor", "regression", "needs-improvement"];
   for (const severity of order) {
     if (flags.some((f) => f.severity === severity)) return severity;
   }
   return "good";
+}
+
+function statusBadge(severity: Severity): string {
+  const role = severityToStatusRole(severity);
+  const icon = role === "good" ? "✓" : role === "critical" ? "✕" : "▲";
+  return `<span class="badge" data-role="${role}">${icon} ${escapeHtml(severity)}</span>`;
+}
+
+// The field value is what actually drives flagging when available (see src/flag/rules.ts) -
+// the table shows the same number the flag is based on, with a note when it fell back to lab.
+function effectiveMetric(field: number | null, lab: number | null): { value: number | null; isField: boolean } {
+  return field != null ? { value: field, isField: true } : { value: lab, isField: false };
+}
+
+function fmtMetric(m: { value: number | null; isField: boolean }, digits = 0): string {
+  if (m.value == null) return "n/a";
+  return `${m.value.toFixed(digits)}${m.isField ? "" : " (lab)"}`;
 }
 
 function daysAgoIso(days: number): string {
@@ -89,6 +105,26 @@ function buildReportPages(previousReportsDir?: string): Array<{ label: string; h
   return [...linksByLabel.values()].sort((a, b) => b.label.localeCompare(a.label));
 }
 
+function legendHtml(): string {
+  return `<div class="chart-legend">
+    <span class="legend-item"><span class="legend-key" style="background:var(--series-mobile)"></span>${SERIES.mobile.label}</span>
+    <span class="legend-item"><span class="legend-key" style="background:var(--series-desktop)"></span>${SERIES.desktop.label}</span>
+  </div>`;
+}
+
+function trendChart(
+  mobileTrend: Array<{ runDate: string; lcpMs: number | null; cls: number | null; perfScore: number | null }>,
+  desktopTrend: typeof mobileTrend,
+  metric: "lcpMs" | "perfScore",
+  valueSuffix: string
+): string {
+  const series: ChartSeries[] = [
+    { key: "mobile", label: "Mobile", colorVar: "var(--series-mobile)", points: mobileTrend.map((d) => ({ date: d.runDate, value: d[metric] })) },
+    { key: "desktop", label: "Desktop", colorVar: "var(--series-desktop)", points: desktopTrend.map((d) => ({ date: d.runDate, value: d[metric] })) },
+  ];
+  return renderLineChart(series, { valueSuffix });
+}
+
 export async function buildDashboard(options: { previousReportsDir?: string } = {}): Promise<void> {
   mkdirSync(SITE_DIR, { recursive: true });
 
@@ -120,15 +156,21 @@ export async function buildDashboard(options: { previousReportsDir?: string } = 
   const resultsTableRows = flaggedRows
     .map(({ row, flags }) => {
       const severity = worstSeverity(flags);
+      if (row.scanFailed) {
+        return `<tr><td>${escapeHtml(row.url)}</td><td>${escapeHtml(row.pageType)}</td><td>${escapeHtml(row.device)}</td><td colspan="4">scan failed</td><td>${statusBadge(severity)}</td></tr>`;
+      }
+      const lcp = fmtMetric(effectiveMetric(row.fieldLcpMs, row.lcpMs));
+      const cls = fmtMetric(effectiveMetric(row.fieldCls, row.cls), 3);
+      const inp = fmtMetric(effectiveMetric(row.fieldInpMs, row.inpMs));
       return `<tr>
         <td>${escapeHtml(row.url)}</td>
         <td>${escapeHtml(row.pageType)}</td>
         <td>${escapeHtml(row.device)}</td>
-        <td>${row.scanFailed ? "scan failed" : (row.lcpMs ?? "n/a")}</td>
-        <td>${row.scanFailed ? "scan failed" : (row.inpMs ?? "n/a")}</td>
-        <td>${row.scanFailed ? "scan failed" : (row.cls?.toFixed(3) ?? "n/a")}</td>
-        <td>${row.scanFailed ? "scan failed" : (row.perfScore ?? "n/a")}</td>
-        <td>${severityBadge(severity)}</td>
+        <td>${lcp}</td>
+        <td>${inp}</td>
+        <td>${cls}</td>
+        <td>${row.perfScore ?? "n/a"}</td>
+        <td>${statusBadge(severity)}</td>
       </tr>`;
     })
     .join("\n");
@@ -148,50 +190,38 @@ export async function buildDashboard(options: { previousReportsDir?: string } = 
 <body>
 <main>
   <h1>Site Speed Dashboard: menkind.co.uk</h1>
-  <p class="muted">Latest snapshot: ${latestRunDate ?? "no data yet"}. Trend window: last ${TREND_WINDOW_DAYS} days.</p>
+  <p class="muted">Latest snapshot: ${latestRunDate ?? "no data yet"} &middot; trend window: last ${TREND_WINDOW_DAYS} days &middot; LCP/CLS/INP below use real-user field data where available, lab data otherwise (marked "lab")</p>
 
-  <section class="cards">
-    <div class="card"><span class="card-value">${flaggedRows.length}</span><span class="card-label">results scanned</span></div>
-    <div class="card"><span class="card-value">${flaggedCount}</span><span class="card-label">flagged</span></div>
-    <div class="card card-broken"><span class="card-value">${brokenCount}</span><span class="card-label">broken</span></div>
-    <div class="card card-poor"><span class="card-value">${poorCount}</span><span class="card-label">poor</span></div>
-    <div class="card card-regression"><span class="card-value">${regressionCount}</span><span class="card-label">regressions</span></div>
+  <section class="stat-row">
+    <div class="card-surface stat-tile"><span class="stat-value">${flaggedRows.length}</span><span class="stat-label">results scanned</span></div>
+    <div class="card-surface stat-tile"><span class="stat-value">${flaggedCount}</span><span class="stat-label">flagged</span></div>
+    <div class="card-surface stat-tile" data-role="critical"><span class="stat-value">${brokenCount}</span><span class="stat-label">broken</span></div>
+    <div class="card-surface stat-tile" data-role="serious"><span class="stat-value">${poorCount}</span><span class="stat-label">poor</span></div>
+    <div class="card-surface stat-tile" data-role="warning"><span class="stat-value">${regressionCount}</span><span class="stat-label">regressions</span></div>
   </section>
 
   <section>
-    <h2>LCP trend (${TREND_WINDOW_DAYS}-day average)</h2>
-    <div class="trend-grid">
-      <div>
-        <h3>Mobile</h3>
-        ${renderSparkline(mobileTrend.filter((d) => d.lcpMs != null).map((d) => ({ label: d.runDate, value: d.lcpMs as number })))}
-      </div>
-      <div>
-        <h3>Desktop</h3>
-        ${renderSparkline(desktopTrend.filter((d) => d.lcpMs != null).map((d) => ({ label: d.runDate, value: d.lcpMs as number })))}
-      </div>
+    <h2>LCP trend (${TREND_WINDOW_DAYS}-day average, lab data)</h2>
+    <div class="card-surface chart-card">
+      ${legendHtml()}
+      ${trendChart(mobileTrend, desktopTrend, "lcpMs", "ms")}
     </div>
   </section>
 
   <section>
-    <h2>Performance score trend (${TREND_WINDOW_DAYS}-day average)</h2>
-    <div class="trend-grid">
-      <div>
-        <h3>Mobile</h3>
-        ${renderSparkline(mobileTrend.filter((d) => d.perfScore != null).map((d) => ({ label: d.runDate, value: d.perfScore as number })))}
-      </div>
-      <div>
-        <h3>Desktop</h3>
-        ${renderSparkline(desktopTrend.filter((d) => d.perfScore != null).map((d) => ({ label: d.runDate, value: d.perfScore as number })))}
-      </div>
+    <h2>Performance score trend (${TREND_WINDOW_DAYS}-day average, lab data)</h2>
+    <div class="card-surface chart-card">
+      ${legendHtml()}
+      ${trendChart(mobileTrend, desktopTrend, "perfScore", "")}
     </div>
   </section>
 
   <section>
     <h2>Current snapshot (${latestRunDate ?? "n/a"})</h2>
-    <div class="table-wrap">
+    <div class="card-surface table-wrap">
       <table>
         <thead>
-          <tr><th>URL</th><th>Page type</th><th>Device</th><th>LCP (ms)</th><th>TBT/INP proxy (ms)</th><th>CLS</th><th>Perf score</th><th>Status</th></tr>
+          <tr><th>URL</th><th>Page type</th><th>Device</th><th>LCP (ms)</th><th>INP (ms)</th><th>CLS</th><th>Perf score</th><th>Status</th></tr>
         </thead>
         <tbody>
           ${resultsTableRows || `<tr><td colspan="8">No data yet.</td></tr>`}
@@ -205,55 +235,10 @@ export async function buildDashboard(options: { previousReportsDir?: string } = 
     ${reportLinksHtml}
   </section>
 </main>
+<script>${CHART_INTERACTION_SCRIPT}</script>
 </body>
 </html>`;
 
   writeFileSync(path.join(SITE_DIR, "index.html"), html, "utf8");
-  writeFileSync(path.join(SITE_DIR, "style.css"), STYLE, "utf8");
+  writeFileSync(path.join(SITE_DIR, "style.css"), THEME_CSS, "utf8");
 }
-
-const STYLE = `
-:root {
-  color-scheme: light dark;
-  --fg: #1a1a1a;
-  --bg: #ffffff;
-  --muted: #6b7280;
-  --border: #e5e7eb;
-  --broken: #dc2626;
-  --poor: #ea580c;
-  --regression: #d97706;
-  --needs-improvement: #ca8a04;
-  --good: #16a34a;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fg: #f3f4f6;
-    --bg: #111827;
-    --muted: #9ca3af;
-    --border: #374151;
-  }
-}
-body { font-family: system-ui, -apple-system, sans-serif; color: var(--fg); background: var(--bg); margin: 0; padding: 2rem; }
-main { max-width: 960px; margin: 0 auto; }
-h1 { margin-bottom: 0.25rem; }
-.muted { color: var(--muted); }
-.cards { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1.5rem 0; }
-.card { border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.5rem; text-align: center; min-width: 100px; }
-.card-value { display: block; font-size: 2rem; font-weight: 700; }
-.card-label { display: block; color: var(--muted); font-size: 0.85rem; }
-.card-broken .card-value { color: var(--broken); }
-.card-poor .card-value { color: var(--poor); }
-.card-regression .card-value { color: var(--regression); }
-.trend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-.trend-grid svg { color: var(--fg); }
-.table-wrap { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; }
-th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
-.badge { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
-.badge-broken { background: color-mix(in srgb, var(--broken) 20%, transparent); color: var(--broken); }
-.badge-poor { background: color-mix(in srgb, var(--poor) 20%, transparent); color: var(--poor); }
-.badge-regression { background: color-mix(in srgb, var(--regression) 20%, transparent); color: var(--regression); }
-.badge-needs-improvement { background: color-mix(in srgb, var(--needs-improvement) 20%, transparent); color: var(--needs-improvement); }
-.badge-good { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
-.report table { margin-bottom: 1.5rem; }
-`;

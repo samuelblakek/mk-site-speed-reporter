@@ -1,5 +1,7 @@
-import { rateCls, rateLcp, ratePerfScore, rateTbtProxy } from "./thresholds.js";
+import { rateCls, rateInp, rateLcp, ratePerfScore, rateTbtProxy } from "./thresholds.js";
 import type { TrailingAverage } from "./trailing.js";
+
+export type FieldDataSource = "page" | "origin" | "none" | null;
 
 export interface ScanResultRow {
   url: string;
@@ -13,6 +15,10 @@ export interface ScanResultRow {
   httpStatus: number | null;
   scanFailed: boolean;
   failureReason: string | null;
+  fieldDataSource: FieldDataSource;
+  fieldLcpMs: number | null;
+  fieldCls: number | null;
+  fieldInpMs: number | null;
 }
 
 export type FlagSeverity = "broken" | "poor" | "needs-improvement" | "regression";
@@ -42,35 +48,67 @@ export function flagScanResult(row: ScanResultRow, trailing: TrailingAverage | n
     flags.push({ metric: "httpStatus", severity: "broken", message: `Page returned HTTP ${row.httpStatus}` });
   }
 
-  if (row.lcpMs != null) {
+  // Field data (real users, p75 over the trailing 28 days) is preferred over lab data when
+  // available - it reflects what actually happened to visitors, not one simulated run. Lab
+  // data still drives the flag when no field data exists for this page or its origin.
+  const fieldSourceLabel = row.fieldDataSource === "origin" ? "site-wide field data" : "field data, this page";
+
+  if (row.fieldLcpMs != null) {
+    const rating = rateLcp(row.fieldLcpMs);
+    if (rating !== "good") {
+      flags.push({
+        metric: "lcp",
+        severity: rating,
+        message: `LCP is ${row.fieldLcpMs}ms (${rating} - real-user ${fieldSourceLabel}, p75; good is <=2500ms, poor is >4000ms)`,
+      });
+    }
+  } else if (row.lcpMs != null) {
     const rating = rateLcp(row.lcpMs);
     if (rating !== "good") {
       flags.push({
         metric: "lcp",
         severity: rating,
-        message: `LCP is ${row.lcpMs}ms (${rating} - good is <=2500ms, poor is >4000ms)`,
+        message: `LCP is ${row.lcpMs}ms (${rating} - lab data, no real-user field data available for this page; good is <=2500ms, poor is >4000ms)`,
       });
     }
   }
 
-  if (row.cls != null) {
+  if (row.fieldCls != null) {
+    const rating = rateCls(row.fieldCls);
+    if (rating !== "good") {
+      flags.push({
+        metric: "cls",
+        severity: rating,
+        message: `CLS is ${row.fieldCls.toFixed(3)} (${rating} - real-user ${fieldSourceLabel}, p75; good is <=0.1, poor is >0.25)`,
+      });
+    }
+  } else if (row.cls != null) {
     const rating = rateCls(row.cls);
     if (rating !== "good") {
       flags.push({
         metric: "cls",
         severity: rating,
-        message: `CLS is ${row.cls.toFixed(3)} (${rating} - good is <=0.1, poor is >0.25)`,
+        message: `CLS is ${row.cls.toFixed(3)} (${rating} - lab data, no real-user field data available for this page; good is <=0.1, poor is >0.25)`,
       });
     }
   }
 
-  if (row.inpMs != null) {
+  if (row.fieldInpMs != null) {
+    const rating = rateInp(row.fieldInpMs);
+    if (rating !== "good") {
+      flags.push({
+        metric: "inp",
+        severity: rating,
+        message: `INP is ${row.fieldInpMs}ms (${rating} - real-user ${fieldSourceLabel}, p75; good is <=200ms, poor is >500ms)`,
+      });
+    }
+  } else if (row.inpMs != null) {
     const rating = rateTbtProxy(row.inpMs);
     if (rating !== "good") {
       flags.push({
         metric: "inp",
         severity: rating,
-        message: `Total Blocking Time, lab proxy for INP, is ${row.inpMs}ms (${rating} - good is <=200ms, poor is >600ms)`,
+        message: `Total Blocking Time, lab proxy for INP, is ${row.inpMs}ms (${rating} - no real-user field data available for this page; good is <=200ms, poor is >600ms)`,
       });
     }
   }

@@ -1,5 +1,6 @@
+import type { DailyAverage, ScanRow } from "../db/queries.js";
+import { rateCls, rateInp, rateLcp, rateTbtProxy, type Rating } from "../flag/thresholds.js";
 import type { Flag } from "../flag/rules.js";
-import type { DailyAverage, ScanRow } from "./queries.js";
 
 export interface FlaggedRow {
   row: ScanRow;
@@ -75,6 +76,72 @@ function renderFlaggedResults(input: ReportInput): string {
     }
     lines.push("");
   }
+  return lines.join("\n");
+}
+
+function renderFieldVsLab(input: ReportInput): string {
+  const nonFailed = input.results.filter((r) => !r.row.scanFailed);
+  const withField = nonFailed.filter((r) => r.row.fieldDataSource !== "none");
+
+  const lines: string[] = ["## Lab Data vs Real-User Field Data\n"];
+  lines.push(
+    "Lab data is a single simulated Lighthouse run (throttled network/CPU, one snapshot in time). Field data is real Chrome users' actual p75 experience over the trailing 28 days. When they disagree, field data is generally the more representative number for what visitors actually experience - the lab run is one simulated scenario, not a sample of real visits.\n"
+  );
+
+  if (withField.length === 0) {
+    lines.push(
+      "No real-user field data was available for any scanned page in this snapshot (the site or these specific pages may not get enough Chrome traffic to qualify for the Chrome UX Report).\n"
+    );
+    return lines.join("\n");
+  }
+
+  lines.push("| Page | Device | Metric | Lab | Field (p75) | Field source | Agreement |");
+  lines.push("|---|---|---|---|---|---|---|");
+
+  for (const { row } of withField) {
+    const sourceLabel = row.fieldDataSource === "origin" ? "site-wide (origin fallback)" : "this page";
+
+    type Check = {
+      metricLabel: string;
+      lab: number | null;
+      field: number | null;
+      labRate: (v: number) => Rating;
+      fieldRate: (v: number) => Rating;
+      unit: string;
+      digits: number;
+    };
+
+    const checks: Check[] = [
+      { metricLabel: "LCP", lab: row.lcpMs, field: row.fieldLcpMs, labRate: rateLcp, fieldRate: rateLcp, unit: "ms", digits: 0 },
+      { metricLabel: "CLS", lab: row.cls, field: row.fieldCls, labRate: rateCls, fieldRate: rateCls, unit: "", digits: 3 },
+      {
+        metricLabel: "INP (field) / TBT (lab proxy)",
+        lab: row.inpMs,
+        field: row.fieldInpMs,
+        labRate: rateTbtProxy,
+        fieldRate: rateInp,
+        unit: "ms",
+        digits: 0,
+      },
+    ];
+
+    for (const check of checks) {
+      if (check.field == null) continue;
+      const fieldRating = check.fieldRate(check.field);
+      const labRating = check.lab == null ? null : check.labRate(check.lab);
+      const labValue = check.lab == null ? "n/a" : `${check.lab.toFixed(check.digits)}${check.unit}`;
+      const fieldValue = `${check.field.toFixed(check.digits)}${check.unit} (${fieldRating})`;
+      const agreement =
+        labRating == null
+          ? "no lab data to compare"
+          : labRating === fieldRating
+            ? "agree"
+            : `disagree - lab rates this ${labRating}, field rates it ${fieldRating}`;
+      lines.push(`| ${row.url} | ${row.device} | ${check.metricLabel} | ${labValue} | ${fieldValue} | ${sourceLabel} | ${agreement} |`);
+    }
+  }
+  lines.push("");
+
   return lines.join("\n");
 }
 
@@ -165,16 +232,16 @@ function renderTrend(input: ReportInput): string {
 function renderAllResults(input: ReportInput): string {
   const lines: string[] = [
     `## All Results (snapshot: ${input.latestRunDate})\n`,
-    "| URL | Page Type | Device | LCP (ms) | TBT/INP proxy (ms) | CLS | Perf Score | HTTP Status |",
-    "|---|---|---|---|---|---|---|---|",
+    "| URL | Page Type | Device | Lab LCP (ms) | Field LCP (ms) | Lab CLS | Field CLS | TBT/lab-INP-proxy (ms) | Field INP (ms) | Perf Score | HTTP Status |",
+    "|---|---|---|---|---|---|---|---|---|---|---|",
   ];
   for (const { row } of input.results) {
     if (row.scanFailed) {
-      lines.push(`| ${row.url} | ${row.pageType} | ${row.device} | scan failed | scan failed | scan failed | scan failed | scan failed |`);
+      lines.push(`| ${row.url} | ${row.pageType} | ${row.device} | scan failed | scan failed | scan failed | scan failed | scan failed | scan failed | scan failed | scan failed |`);
       continue;
     }
     lines.push(
-      `| ${row.url} | ${row.pageType} | ${row.device} | ${fmt(row.lcpMs)} | ${fmt(row.inpMs)} | ${fmt(row.cls, 3)} | ${fmt(row.perfScore)} | ${row.httpStatus ?? "n/a"} |`
+      `| ${row.url} | ${row.pageType} | ${row.device} | ${fmt(row.lcpMs)} | ${fmt(row.fieldLcpMs)} | ${fmt(row.cls, 3)} | ${fmt(row.fieldCls, 3)} | ${fmt(row.inpMs)} | ${fmt(row.fieldInpMs)} | ${fmt(row.perfScore)} | ${row.httpStatus ?? "n/a"} |`
     );
   }
   return lines.join("\n") + "\n";
@@ -227,8 +294,10 @@ const GLOSSARY = `## Glossary
 |---|---|
 | LCP (Largest Contentful Paint) | How long it takes the largest visible element (usually a hero image or heading) to render. Google's official thresholds: good <=2.5s, poor >4s. |
 | CLS (Cumulative Layout Shift) | How much visible content unexpectedly shifts around while the page loads. Good <=0.1, poor >0.25. |
-| INP (Interaction to Next Paint) | How responsive the page feels to clicks/taps, measured from real user sessions. Can't be measured in a single automated scan. |
-| TBT (Total Blocking Time) | The lab-only stand-in used here for INP - how long the main thread was blocked and unable to respond during page load. Uses its own thresholds (good <=200ms, poor >600ms), distinct from real INP's thresholds. |
+| INP (Interaction to Next Paint) | How responsive the page feels to clicks/taps. Official thresholds: good <=200ms, poor >500ms. Real INP can only come from actual user sessions (field data) - a single automated scan can't produce it directly. |
+| TBT (Total Blocking Time) | The lab-only stand-in used for INP when no field data is available - how long the main thread was blocked and unable to respond during page load. Uses its own thresholds (good <=200ms, poor >600ms), distinct from real INP's thresholds - the two are not interchangeable. |
+| Lab data | Measured from a single simulated Lighthouse run (throttled network/CPU) at scan time - consistent and repeatable, but one scenario, not a sample of real visits. |
+| Field data | Real Chrome users' actual measured experience, aggregated as a 28-day rolling p75 by the Chrome UX Report (CrUX). Only available for pages/sites with enough Chrome traffic. Page-level data is used when available; site-wide ("origin") data is the fallback for lower-traffic pages. |
 | Lighthouse performance score | Google's 0-100 composite score for the page, on the same run. 90-100 is good, 50-89 needs improvement, below 50 is poor. |
 | Regression | A metric that has gotten meaningfully worse (20%+) compared to its own trailing 7-run average, independent of whether it has crossed a "poor" threshold. |
 | Render-blocking resource | A script or stylesheet that must load before the page can start rendering. |
@@ -242,6 +311,7 @@ const REFERENCES = `## References
 | [1] | Google web.dev - Defining Core Web Vitals thresholds | Official good/needs-improvement/poor bands for LCP, CLS, INP | https://web.dev/articles/defining-core-web-vitals-thresholds |
 | [2] | Chrome for Developers - Lighthouse performance scoring | How the 0-100 performance score and Total Blocking Time are calculated | https://developer.chrome.com/docs/lighthouse/performance/performance-scoring |
 | [3] | Google PageSpeed Insights API documentation | The data source for every metric in this report | https://developers.google.com/speed/docs/insights/v5/get-started |
+| [4] | Chrome UX Report (CrUX) documentation | What the real-user field data is, how it's aggregated, and its traffic-threshold requirements | https://developer.chrome.com/docs/crux |
 `;
 
 export function renderReport(input: ReportInput): string {
@@ -250,11 +320,12 @@ export function renderReport(input: ReportInput): string {
     "",
     `**Period:** ${input.startDate} to ${input.endDate}`,
     `**Generated:** ${input.generatedAt}`,
-    `**Data source:** Google PageSpeed Insights API (Lighthouse lab data), automated scan`,
+    `**Data source:** Google PageSpeed Insights API (Lighthouse lab data + Chrome UX Report field data), automated scan`,
     "",
     renderSummary(input),
     renderFlaggedResults(input),
     renderRecommendedActions(input),
+    renderFieldVsLab(input),
     renderTrend(input),
     renderConsoleAndResourceDetail(input),
     renderAllResults(input),
