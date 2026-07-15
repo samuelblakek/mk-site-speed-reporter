@@ -9,171 +9,153 @@
 <body>
 <main>
   <h1>Site Speed Dashboard: menkind.co.uk</h1>
-  <p class="muted">Latest snapshot: 2026-07-14. Trend window: last 30 days.</p>
+  <p class="muted">Latest snapshot: 2026-07-15 &middot; trend window: last 30 days &middot; LCP/CLS/INP below use real-user field data where available, lab data otherwise (marked "lab")</p>
 
-  <section class="cards">
-    <div class="card"><span class="card-value">12</span><span class="card-label">results scanned</span></div>
-    <div class="card"><span class="card-value">12</span><span class="card-label">flagged</span></div>
-    <div class="card card-broken"><span class="card-value">0</span><span class="card-label">broken</span></div>
-    <div class="card card-poor"><span class="card-value">9</span><span class="card-label">poor</span></div>
-    <div class="card card-regression"><span class="card-value">0</span><span class="card-label">regressions</span></div>
+  <section class="stat-row">
+    <div class="card-surface stat-tile"><span class="stat-value">6</span><span class="stat-label">results scanned</span></div>
+    <div class="card-surface stat-tile"><span class="stat-value">6</span><span class="stat-label">flagged</span></div>
+    <div class="card-surface stat-tile" data-role="critical"><span class="stat-value">0</span><span class="stat-label">broken</span></div>
+    <div class="card-surface stat-tile" data-role="serious"><span class="stat-value">3</span><span class="stat-label">poor</span></div>
+    <div class="card-surface stat-tile" data-role="warning"><span class="stat-value">0</span><span class="stat-label">regressions</span></div>
   </section>
 
   <section>
-    <h2>LCP trend (30-day average)</h2>
-    <div class="trend-grid">
-      <div>
-        <h3>Mobile</h3>
-        <p class="muted">Not enough data yet for a trend line.</p>
-      </div>
-      <div>
-        <h3>Desktop</h3>
-        <p class="muted">Not enough data yet for a trend line.</p>
-      </div>
+    <h2>LCP trend (30-day average, lab data)</h2>
+    <div class="card-surface chart-card">
+      <div class="chart-legend">
+    <span class="legend-item"><span class="legend-key" style="background:var(--series-mobile)"></span>Mobile</span>
+    <span class="legend-item"><span class="legend-key" style="background:var(--series-desktop)"></span>Desktop</span>
+  </div>
+      
+<div class="chart-wrap" id="chart-0">
+  <svg class="trend-chart" viewBox="0 0 600 180" data-chart-id="chart-0" role="img" aria-label="Trend from 2026-07-14 to 2026-07-15">
+    <line class="gridline" x1="16" y1="12.0" x2="584" y2="12.0" />
+<line class="gridline" x1="16" y1="84.0" x2="584" y2="84.0" />
+<line class="gridline" x1="16" y1="156.0" x2="584" y2="156.0" />
+    
+        <path d="M16.0,115.7 L584.0,12.0" fill="none" stroke="var(--series-mobile)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="584.0" cy="12.0" r="4" fill="var(--series-mobile)" stroke="var(--surface-1)" stroke-width="2" />
+        <text x="590" y="12.0" dominant-baseline="middle" text-anchor="end" font-weight="600" fill="var(--series-mobile)">21973ms</text>
+      
+
+        <path d="M16.0,145.6 L584.0,146.5" fill="none" stroke="var(--series-desktop)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="584.0" cy="146.5" r="4" fill="var(--series-desktop)" stroke="var(--surface-1)" stroke-width="2" />
+        <text x="590" y="146.5" dominant-baseline="middle" text-anchor="end" font-weight="600" fill="var(--series-desktop)">1451ms</text>
+      
+    <line class="crosshair" x1="0" y1="12" x2="0" y2="156" />
+    <text x="16" y="174" text-anchor="start">2026-07-14</text>
+    <text x="584" y="174" text-anchor="end">2026-07-15</text>
+    <rect x="16" y="0" width="568" height="180" fill="transparent" data-hit-area="chart-0" />
+  </svg>
+  <div class="chart-tooltip" data-tooltip-for="chart-0"></div>
+</div>
+<script type="application/json" id="chart-0-data">{"dates":["2026-07-14","2026-07-15"],"rows":[{"date":"2026-07-14","values":[{"label":"Mobile","color":"var(--series-mobile)","value":6152},{"label":"Desktop","color":"var(--series-desktop)","value":1583}]},{"date":"2026-07-15","values":[{"label":"Mobile","color":"var(--series-mobile)","value":21972.666666666668},{"label":"Desktop","color":"var(--series-desktop)","value":1451}]}],"padding":{"top":12,"right":16,"bottom":24,"left":16},"plotWidth":568,"width":600,"height":180}</script>
+
     </div>
   </section>
 
   <section>
-    <h2>Performance score trend (30-day average)</h2>
-    <div class="trend-grid">
-      <div>
-        <h3>Mobile</h3>
-        <p class="muted">Not enough data yet for a trend line.</p>
-      </div>
-      <div>
-        <h3>Desktop</h3>
-        <p class="muted">Not enough data yet for a trend line.</p>
-      </div>
+    <h2>Performance score trend (30-day average, lab data)</h2>
+    <div class="card-surface chart-card">
+      <div class="chart-legend">
+    <span class="legend-item"><span class="legend-key" style="background:var(--series-mobile)"></span>Mobile</span>
+    <span class="legend-item"><span class="legend-key" style="background:var(--series-desktop)"></span>Desktop</span>
+  </div>
+      
+<div class="chart-wrap" id="chart-1">
+  <svg class="trend-chart" viewBox="0 0 600 180" data-chart-id="chart-1" role="img" aria-label="Trend from 2026-07-14 to 2026-07-15">
+    <line class="gridline" x1="16" y1="12.0" x2="584" y2="12.0" />
+<line class="gridline" x1="16" y1="84.0" x2="584" y2="84.0" />
+<line class="gridline" x1="16" y1="156.0" x2="584" y2="156.0" />
+    
+        <path d="M16.0,35.0 L584.0,63.5" fill="none" stroke="var(--series-mobile)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="584.0" cy="63.5" r="4" fill="var(--series-mobile)" stroke="var(--surface-1)" stroke-width="2" />
+        <text x="590" y="63.5" dominant-baseline="middle" text-anchor="end" font-weight="600" fill="var(--series-mobile)">44</text>
+      
+
+        <path d="M16.0,12.0 L584.0,28.7" fill="none" stroke="var(--series-desktop)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="584.0" cy="28.7" r="4" fill="var(--series-desktop)" stroke="var(--surface-1)" stroke-width="2" />
+        <text x="590" y="28.7" dominant-baseline="middle" text-anchor="end" font-weight="600" fill="var(--series-desktop)">61</text>
+      
+    <line class="crosshair" x1="0" y1="12" x2="0" y2="156" />
+    <text x="16" y="174" text-anchor="start">2026-07-14</text>
+    <text x="584" y="174" text-anchor="end">2026-07-15</text>
+    <rect x="16" y="0" width="568" height="180" fill="transparent" data-hit-area="chart-1" />
+  </svg>
+  <div class="chart-tooltip" data-tooltip-for="chart-1"></div>
+</div>
+<script type="application/json" id="chart-1-data">{"dates":["2026-07-14","2026-07-15"],"rows":[{"date":"2026-07-14","values":[{"label":"Mobile","color":"var(--series-mobile)","value":58},{"label":"Desktop","color":"var(--series-desktop)","value":69}]},{"date":"2026-07-15","values":[{"label":"Mobile","color":"var(--series-mobile)","value":44.333333333333336},{"label":"Desktop","color":"var(--series-desktop)","value":61}]}],"padding":{"top":12,"right":16,"bottom":24,"left":16},"plotWidth":568,"width":600,"height":180}</script>
+
     </div>
   </section>
 
   <section>
-    <h2>Current snapshot (2026-07-14)</h2>
-    <div class="table-wrap">
+    <h2>Current snapshot (2026-07-15)</h2>
+    <div class="card-surface table-wrap">
       <table>
         <thead>
-          <tr><th>URL</th><th>Page type</th><th>Device</th><th>LCP (ms)</th><th>TBT/INP proxy (ms)</th><th>CLS</th><th>Perf score</th><th>Status</th></tr>
+          <tr><th>URL</th><th>Page type</th><th>Device</th><th>LCP (ms)</th><th>INP (ms)</th><th>CLS</th><th>Perf score</th><th>Status</th></tr>
         </thead>
         <tbody>
           <tr>
         <td>https://www.menkind.co.uk/</td>
-        <td>homepage</td>
+        <td>product</td>
         <td>desktop</td>
-        <td>1482</td>
-        <td>600</td>
-        <td>0.013</td>
-        <td>67</td>
-        <td><span class="badge badge-needs-improvement">needs-improvement</span></td>
+        <td>2155</td>
+        <td>151</td>
+        <td>0.230</td>
+        <td>61</td>
+        <td><span class="badge" data-role="warning">▲ needs-improvement</span></td>
       </tr>
 <tr>
         <td>https://www.menkind.co.uk/</td>
         <td>category</td>
         <td>desktop</td>
-        <td>1482</td>
-        <td>600</td>
-        <td>0.013</td>
-        <td>67</td>
-        <td><span class="badge badge-needs-improvement">needs-improvement</span></td>
-      </tr>
-<tr>
-        <td>https://www.menkind.co.uk/</td>
-        <td>product</td>
-        <td>desktop</td>
-        <td>1482</td>
-        <td>600</td>
-        <td>0.013</td>
-        <td>67</td>
-        <td><span class="badge badge-needs-improvement">needs-improvement</span></td>
-      </tr>
-<tr>
-        <td>https://www.menkind.co.uk/</td>
-        <td>category</td>
-        <td>desktop</td>
-        <td>1883</td>
-        <td>1740</td>
-        <td>0.013</td>
-        <td>53</td>
-        <td><span class="badge badge-poor">poor</span></td>
-      </tr>
-<tr>
-        <td>https://www.menkind.co.uk/</td>
-        <td>product</td>
-        <td>desktop</td>
-        <td>1701</td>
-        <td>3160</td>
-        <td>0.013</td>
-        <td>53</td>
-        <td><span class="badge badge-poor">poor</span></td>
+        <td>2155</td>
+        <td>151</td>
+        <td>0.230</td>
+        <td>61</td>
+        <td><span class="badge" data-role="warning">▲ needs-improvement</span></td>
       </tr>
 <tr>
         <td>https://www.menkind.co.uk/</td>
         <td>homepage</td>
         <td>desktop</td>
-        <td>1701</td>
-        <td>3160</td>
-        <td>0.013</td>
-        <td>53</td>
-        <td><span class="badge badge-poor">poor</span></td>
-      </tr>
-<tr>
-        <td>https://www.menkind.co.uk/</td>
-        <td>homepage</td>
-        <td>mobile</td>
-        <td>22843</td>
-        <td>559</td>
-        <td>0.000</td>
-        <td>42</td>
-        <td><span class="badge badge-poor">poor</span></td>
-      </tr>
-<tr>
-        <td>https://www.menkind.co.uk/</td>
-        <td>category</td>
-        <td>mobile</td>
-        <td>22843</td>
-        <td>559</td>
-        <td>0.000</td>
-        <td>42</td>
-        <td><span class="badge badge-poor">poor</span></td>
+        <td>2155</td>
+        <td>151</td>
+        <td>0.230</td>
+        <td>61</td>
+        <td><span class="badge" data-role="warning">▲ needs-improvement</span></td>
       </tr>
 <tr>
         <td>https://www.menkind.co.uk/</td>
         <td>product</td>
         <td>mobile</td>
-        <td>22843</td>
-        <td>559</td>
-        <td>0.000</td>
-        <td>42</td>
-        <td><span class="badge badge-poor">poor</span></td>
-      </tr>
-<tr>
-        <td>https://www.menkind.co.uk/</td>
-        <td>product</td>
-        <td>mobile</td>
-        <td>9827</td>
-        <td>2926</td>
-        <td>0.013</td>
-        <td>28</td>
-        <td><span class="badge badge-poor">poor</span></td>
-      </tr>
-<tr>
-        <td>https://www.menkind.co.uk/</td>
-        <td>homepage</td>
-        <td>mobile</td>
-        <td>9827</td>
-        <td>2926</td>
-        <td>0.013</td>
-        <td>28</td>
-        <td><span class="badge badge-poor">poor</span></td>
+        <td>2339</td>
+        <td>237</td>
+        <td>0.210</td>
+        <td>48</td>
+        <td><span class="badge" data-role="serious">▲ poor</span></td>
       </tr>
 <tr>
         <td>https://www.menkind.co.uk/</td>
         <td>category</td>
         <td>mobile</td>
-        <td>9827</td>
-        <td>2926</td>
-        <td>0.013</td>
-        <td>28</td>
-        <td><span class="badge badge-poor">poor</span></td>
+        <td>2339</td>
+        <td>237</td>
+        <td>0.210</td>
+        <td>47</td>
+        <td><span class="badge" data-role="serious">▲ poor</span></td>
+      </tr>
+<tr>
+        <td>https://www.menkind.co.uk/</td>
+        <td>homepage</td>
+        <td>mobile</td>
+        <td>2339</td>
+        <td>237</td>
+        <td>0.210</td>
+        <td>38</td>
+        <td><span class="badge" data-role="serious">▲ poor</span></td>
       </tr>
         </tbody>
       </table>
@@ -182,8 +164,74 @@
 
   <section>
     <h2>Reports</h2>
-    <ul><li><a href="reports/daily-2026-07-14.html">daily-2026-07-14</a></li></ul>
+    <ul><li><a href="reports/daily-2026-07-15.html">daily-2026-07-15</a></li><li><a href="reports/daily-2026-07-14.html">daily-2026-07-14</a></li></ul>
   </section>
 </main>
+<script>
+document.querySelectorAll('svg.trend-chart').forEach((svg) => {
+  const id = svg.getAttribute('data-chart-id');
+  const dataEl = document.getElementById(id + '-data');
+  if (!dataEl) return;
+  const chartData = JSON.parse(dataEl.textContent);
+  const wrap = document.getElementById(id);
+  const tooltip = wrap.querySelector('[data-tooltip-for="' + id + '"]');
+  const crosshair = svg.querySelector('.crosshair');
+  const hitArea = svg.querySelector('[data-hit-area="' + id + '"]');
+  if (!hitArea) return;
+
+  function nearestIndex(px) {
+    const frac = (px - chartData.padding.left) / chartData.plotWidth;
+    const i = Math.round(frac * (chartData.dates.length - 1));
+    return Math.max(0, Math.min(chartData.dates.length - 1, i));
+  }
+
+  function show(clientX, clientY) {
+    const rect = svg.getBoundingClientRect();
+    const scale = chartData.width / rect.width;
+    const px = (clientX - rect.left) * scale;
+    const i = nearestIndex(px);
+    const x = chartData.padding.left + (chartData.dates.length === 1 ? 0 : (i / (chartData.dates.length - 1)) * chartData.plotWidth);
+    crosshair.setAttribute('x1', x);
+    crosshair.setAttribute('x2', x);
+    crosshair.style.opacity = '1';
+
+    const row = chartData.rows[i];
+    tooltip.replaceChildren();
+    const dateEl = document.createElement('div');
+    dateEl.className = 'tt-date';
+    dateEl.textContent = row.date;
+    tooltip.appendChild(dateEl);
+    for (const v of row.values) {
+      if (v.value == null) continue;
+      const rowEl = document.createElement('div');
+      rowEl.className = 'tt-row';
+      const key = document.createElement('span');
+      key.className = 'tt-key';
+      key.style.background = v.color;
+      const labelText = document.createTextNode(v.label);
+      const valueEl = document.createElement('span');
+      valueEl.className = 'tt-value';
+      valueEl.textContent = String(v.value);
+      rowEl.append(key, labelText, valueEl);
+      tooltip.appendChild(rowEl);
+    }
+    tooltip.style.opacity = '1';
+    const wrapRect = wrap.getBoundingClientRect();
+    const left = Math.min((x / chartData.width) * wrapRect.width, wrapRect.width - 140);
+    tooltip.style.left = Math.max(0, left) + 'px';
+    tooltip.style.top = '4px';
+  }
+
+  function hide() {
+    crosshair.style.opacity = '0';
+    tooltip.style.opacity = '0';
+  }
+
+  hitArea.addEventListener('pointermove', (e) => show(e.clientX, e.clientY));
+  hitArea.addEventListener('pointerleave', hide);
+  hitArea.addEventListener('focus', () => show(hitArea.getBoundingClientRect().left, 0));
+  hitArea.addEventListener('blur', hide);
+});
+</script>
 </body>
 </html>
